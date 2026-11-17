@@ -6,34 +6,54 @@ Tell Claude Code, Codex, Grok, or another agent what you want done; these skills
 teach it the Loom commands, output formats, recovery steps, and safety boundaries.
 
 Loom is a local-first control plane for agent CLIs, ACP agents, and model endpoints.
-Its daemon connects shared memory, baton handoffs, parallel orchestras, chains,
-triggers, bridges, live chats, teams, and a phone app. This repository contains
+Its daemon connects shared memory, baton handoffs, parallel orchestras, saved fleets,
+model comparisons, chains, triggers, bridges, live chats, teams, and a phone app.
+Loom 2 also exposes native MCP tools for agents. This repository contains
 instructions for operating Loom, not the Loom runtime.
 
 ## Skills
 
 | Skill | Purpose |
 | --- | --- |
-| [loom](skills/loom/SKILL.md) | Start here: projects, agents, messages, baton, chats, and search. |
-| [loom-orchestrate](skills/loom-orchestrate/SKILL.md) | Plan parallel work, follow runs, race implementations, and apply results. |
-| [loom-chain](skills/loom-chain/SKILL.md) | Check and run goals across projects in order. |
-| [loom-agents](skills/loom-agents/SKILL.md) | Add sessions, ACP/model agents, permissions, defaults, and instructions. |
-| [loom-automation](skills/loom-automation/SKILL.md) | Set schedules, signed webhooks, and Slack/Discord bridges. |
-| [loom-collaborate](skills/loom-collaborate/SKILL.md) | Share chats, work with teams, search sessions, and inspect audit records. |
-| [loom-ops](skills/loom-ops/SKILL.md) | Diagnose health, limit resource usage, restart safely, and clean worktrees. |
+| [loom](skills/loom/SKILL.md) | Start here: demo, projects, bundled skills, MCP connection, messages, steering, and search. |
+| [loom-orchestrate](skills/loom-orchestrate/SKILL.md) | Select fleets/scoreboard models, compare implementations, report progress, and follow/apply runs. |
+| [loom-chain](skills/loom-chain/SKILL.md) | Check and run goals with fleet selections across projects in order. |
+| [loom-agents](skills/loom-agents/SKILL.md) | Configure sessions, accounts, chat/message models, permissions, and defaults. |
+| [loom-automation](skills/loom-automation/SKILL.md) | Intake assigned issues, follow PRs, set triggers, and configure bridges/approvers. |
+| [loom-collaborate](skills/loom-collaborate/SKILL.md) | Share chats, inspect presence, move/branch conversations, and manage teams. |
+| [loom-ops](skills/loom-ops/SKILL.md) | Run setup, install CLIs, collect triage, limit resources, and restart/clean safely. |
+| [loom-mcp](skills/loom-mcp/SKILL.md) | Use native Loom tools, bounded waits, fleets, worker reports, and scoped credentials. |
 
 ## Requirements
 
-- Loom **≥ 1.3.0**, npm package `@loompad/cli`, executable `loom`.
+- **Loom ≥ 2.0.0**, npm package `@loompad/cli`, executable `loom`.
 - Node **≥ 22.5** for Loom; Node 22 or newer for this repository's validator.
 - Git for orchestra worktrees and chains; installed/authenticated agents or a
-  configured model provider for the work you delegate.
+  configured model provider for real work. `loom try` supplies offline scripted
+  demo agents without an agent account.
+- An MCP-capable agent/client and Loom connection for the `loom-mcp` skill.
 - A POSIX shell for the installer. Skills are plain Markdown and require no npm dependencies.
 
 Install Loom separately using its upstream instructions. Installing these skills
 does not install Loom, start its daemon, or configure credentials.
 
 ## Install
+
+Loom can install the skills bundled with its installed release:
+
+```sh
+loom skills agents --json
+loom skills install loom --agent codex --dry-run
+loom skills install loom --agent codex
+loom skills uninstall loom --agent codex --dry-run
+```
+
+These commands do not start a daemon. Agent choices are claude-code, codex, grok,
+opencode, or all (default). Codex and OpenCode share `~/.agents/skills`; removing
+their managed copies affects both. Omit `--dry-run` for an intended uninstall.
+Use `--target /path/to/skills` for a custom destination. Unmanaged conflicts remain
+untouched. The release bundle may lag this repository; use the checkout installer
+below to install all eight skills here, including `loom-mcp`.
 
 Clone or download this repository, then run from its root:
 
@@ -42,13 +62,13 @@ sh install.sh --dry-run
 sh install.sh
 ```
 
-By default the installer copies all seven skill folders into each destination
+By default the installer copies all eight skill folders into each destination
 that already exists:
 
 | Agent | Destination |
 | --- | --- |
 | Claude Code | `~/.claude/skills/` |
-| Codex | `~/.agents/skills/` |
+| Codex / OpenCode | `~/.agents/skills/` |
 | Grok | `~/.grok/skills/` |
 
 Create just the destinations you want before running it, or use `--all` to create
@@ -68,6 +88,13 @@ The installer marks its copies and recognizes links to this checkout. It refuses
 to replace or uninstall unrelated same-name entries; inspect and move those yourself.
 Uninstall removes only these managed skill folders, never the destination directories.
 Dry-run prints planned actions without writing anything.
+
+To expose Loom's tools in an external agent, run `loom connect codex --dry-run`,
+then `loom connect codex` in the intended project and inspect `loom connect --list`.
+The stdio server uses an already-running daemon. For agents inside Loom, enable
+project `loomTools: true`; MCP-capable Orchestra workers receive tools automatically.
+See [loom](skills/loom/SKILL.md) for setup and [loom-mcp](skills/loom-mcp/SKILL.md)
+for tool use and credential boundaries.
 
 For an agent without skill support, paste [AGENTS.md](AGENTS.md) into its project
 `AGENTS.md` or `CLAUDE.md`. Append to existing instructions rather than overwriting
@@ -108,6 +135,8 @@ It reads TypeScript as text and never executes Loom. This command-name check is
 not a flag or behavior verifier: review those against the source manually.
 CI runs validation and ShellCheck; it skips upstream command checking unless
 `LOOM_CLI_SRC` is supplied. Do not run against someone's live daemon to verify docs.
+The [Loom 2 verification ledger](docs/loom-2-verification.md) records source locations
+for the commands, flags, outputs, and MCP contracts reviewed for this update.
 
 Never put tokens/secrets in examples or commit `.loom/`. Preserve the restart,
 bypass-mode, and chain-preflight safety guidance when editing.
