@@ -70,6 +70,13 @@ function rootCommands(source) {
   const commands = new Set();
   const loopPattern = /for\s*\(\s*const\s+(\[[^\]]+\]|\w+)\s+of\s+(\[[\s\S]*?\])\s*(?:as\s+const\s*)?\)\s*\{/g;
   const loops = [...source.matchAll(loopPattern)];
+  // Loom 2 registers chat:edit/chat:retry with a conditional expression.
+  // Accept only literal branches at root registration sites; never evaluate TS.
+  const conditional = /\bprogram\s*\.command\(\s*\w+\s*===\s*["'][^"']+["']\s*\?\s*(["'])([^"']+)\1\s*:\s*(["'])([^"']+)\3\s*\)/g;
+  for (const match of source.matchAll(conditional)) {
+    commands.add(match[2].split(/\s/)[0]);
+    commands.add(match[4].split(/\s/)[0]);
+  }
   const registration = /\bprogram\s*\.command\(\s*(["'`])([\s\S]*?)\1/g;
   for (const match of source.matchAll(registration)) {
     let names = [match[2].split(/\s/)[0]];
@@ -107,9 +114,11 @@ function checkCommands(file, commands) {
   const text = fs.readFileSync(file, 'utf8');
   // Match both inline code spans and triple-backtick fenced examples.
   for (const span of text.matchAll(/(`+)([\s\S]*?)\1(?!`)/g)) {
-    for (const mention of span[2].matchAll(/\bloom[ \t\r\n]+([a-z][a-z0-9:-]*|--[a-z-]+)/g)) {
+    // Commands start a span/line or follow a shell separator. A positional value
+    // named loom (skills install loom, intake --label loom) is not an invocation.
+    for (const mention of span[2].matchAll(/(?:^|[\r\n;&|])[ \t]*loom[ \t\r\n]+([a-z][a-z0-9:-]*|--[a-z-]+)/g)) {
       if (!commands.has(mention[1])) {
-        const offset = span.index + span[1].length + mention.index;
+        const offset = span.index + span[1].length + mention.index + mention[0].indexOf('loom');
         const line = text.slice(0, offset).split('\n').length;
         report(file, `line ${line}: unknown Loom command '${mention[1]}' in backtick code`);
       }
